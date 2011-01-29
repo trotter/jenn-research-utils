@@ -8,7 +8,28 @@ require 'csv'
 # left column below. The second line will be data using the column
 # headers from the right column below.
 COLUMNS = [
-            %w( google_doc_id  google_doc_id ),
+            %w( subID           subID ),
+            %w( duration        duration_p ),
+            %w( age             age_p ),
+            %w( gender          gender_p ),
+            %w( ethnic          ethnic_p ),
+            %w( marital         marital_p ),
+            %w( sexorien        sexorien_p ),
+            %w( rel_length      rel_length_p ),
+            %w( SIASS           SIASS_p ),
+            %w( DAS             DAS_p ),
+            %w( FIS             FIS_p ),
+            %w( ISS             ISS_p ),
+            %w( SCS             SCS_p ),
+            %w( SCS_IP_subscale total_SCS_IP_P ),
+          ]
+
+# These columns must be in the data for it to count as "non-blank"
+# If required columns is empty, then all fields are required.
+EXEMPT_COLUMNS = %w( rel_length )
+
+# Unused
+COLUMNS_FROM_FIRST_DATA_SET = [
             %w( id             p_id ),
             %w( gender         p_gender ),
             %w( ethnic         p_ethnic ),
@@ -21,7 +42,7 @@ COLUMNS = [
             %w( total_ISS      total_p_ISS ),
             %w( total_SCS      total_p_SCS ),
             %w( total_SCS_IP   total_SCS_IP_P ),
-          ]
+]
 
 class SplitPartners
   def self.parse(args)
@@ -137,8 +158,20 @@ class SplitLine
     COLUMNS.map { |c| @line[c.last] }
   end
 
+  def indexes_of_acceptable_missing_columns
+    first_row_columns = COLUMNS.map(&:first)
+    EXEMPT_COLUMNS.map { |c| first_row_columns.index(c) }
+  end
+
   def missing_values?
-    (line1 + line2).any? { |v| v.strip == "" }
+    ok_to_miss = indexes_of_acceptable_missing_columns
+    missing = false
+    [line1, line2].each do |line|
+      line.each_with_index do |v, i|
+        missing ||= (v.nil? || v.strip == "") && !ok_to_miss.include?(i)
+      end
+    end
+    missing
   end
 
   def run
