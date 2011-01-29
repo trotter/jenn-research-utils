@@ -43,6 +43,10 @@ class SplitPartners
         options[:remove_blank_lines] = !show_blank_lines
       end
 
+      opts.on("--stdout", "Print output to stdout") do |stdout|
+        options[:stdout] = stdout
+      end
+
       # No argument, shows at tail.  This will print an options summary.
       # Try it and see!
       opts.on_tail("-h", "--help", "Show this message") do
@@ -53,7 +57,7 @@ class SplitPartners
 
     opts.parse!(args)
 
-    unless options[:input] && options[:output]
+    unless options[:input] && (options[:output] || options[:stdout])
       puts opts
       exit
     end
@@ -65,6 +69,7 @@ class SplitPartners
     @input  = options[:input]
     @output = options[:output]
     @remove_blank_lines = options[:remove_blank_lines]
+    @show_on_stdout = options[:stdout]
   end
 
   def header
@@ -72,21 +77,30 @@ class SplitPartners
   end
 
   def puts(*args)
-    @out.puts *args
-    $stdout.puts *args
+    if @show_on_stdout
+      $stdout.puts *args
+    else
+      @out.puts *args
+    end
   end
 
   def write(*args)
-    @out.write *args
-    $stdout.write *args
+    if @show_on_stdout
+      $stdout.write *args
+    else
+      @out.write *args
+    end
   end
 
   def open_output_file
+    return if @show_on_stdout
     @out = File.open(@output, 'w')
   end
 
   def close_output_file
+    return if @show_on_stdout
     @out.close
+    $stdout.puts "done"
   end
 
   def run
